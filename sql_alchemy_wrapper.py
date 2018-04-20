@@ -18,6 +18,12 @@ DB_PASS_KEY = "db_password"
 DB_NAME_KEY = "db_name"
 DB_DEBUG_KEY = "db_debug"
 
+CHAR_PLUS = '+'
+CHAR_COLON = ':'
+CHAR_AT = '@'
+CHAR_SLASH = '/'
+STR_DELIM = ' | '
+CHAR_LF = '\n'
 
 
 class MyDatabase:
@@ -40,9 +46,9 @@ class MyDatabase:
         db_name = configParser.get(DB_SECTION, DB_NAME_KEY)
         is_debug = configParser.getboolean(DB_SECTION, DB_DEBUG_KEY)
 		
-		# Make a connection to database
-        connector = driver + "+" + dialect + "://" + user + ":" + passwd + "@" + host + "/" + db_name	
-
+	# Make a connection to database
+        #connector = driver + "+" + dialect + "://" + user + ":" + passwd + "@" + host + "/" + db_name	
+        connector = driver + CHAR_PLUS + dialect + "://" + user + CHAR_COLON + passwd + CHAR_AT + host + CHAR_SLASH + db_name
         self.engine = create_engine(connector, echo=is_debug) # echo=True for debugging
         self.conn = self.engine.connect()
 
@@ -68,6 +74,37 @@ class MyDatabase:
             # Column names
             #return(acct_in.columns.keys())
 		
+		
+    def __del__(self):
+	    """ (GxDatabase) -> NoneType
+		
+		Cleanup the connection when object is destroyed.
+		
+        """
+        #self.conn.close()
+        #pass
+	
+	
+    def insert_query(self, table, **kwargs):
+        """
+		
+		
+        """
+        #metadata = MetaData(self.engine)
+        #tb = Table(table, metadata, autoload=True)
+        #col_data = ''
+		
+        #for key, value in kwargs.items():
+        #    col_data += key + '=' + str(value) + ','
+		
+        #stmt = tb.insert().values(col_data.rstrip(','))
+        
+        #print(stmt)
+        #result = self.conn.execute(stmt)
+		
+        #return result
+        pass
+
 		
     def execute_query(self, query):
         """ (MyDatabase, str) -> str
@@ -102,3 +139,4 @@ if __name__ == "__main__":
     #stmt = select([acct_in])
     #res = conn.execute(stmt).fetchall()
     #print(res[0])
+    #mydb.insert_query('acct_in', ip_dst="25.25.25.25", packets=12, bytes=123)
