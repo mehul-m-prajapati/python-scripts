@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys
-import os
 import time
 import json
 import radius
@@ -11,13 +10,6 @@ from helpers import *
 
 # Globals
 GENERIC_SUBNET = "0.0.0.0/0"
-SECTION_RAD_SERVER = "radius"
-SECTION_LOG = "log"
-DEBUG_FLAG_KEY = "gx_debug"
-LOG_FILE_KEY = "gx_log_file"
-CONF_FILE = 'conf/gx_config.ini'
-ABS_PATH = os.path.split(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_FILE_PATH = os.path.join(ABS_PATH[0], CONF_FILE)
 NLRI_KEY = "nlri"
 IPV4_KEY = "ipv4 unicast"
 ROUTE_ANNOUNCE_KEY = "announce"
@@ -32,44 +24,81 @@ def cfg_init():
     
     """
     cfg_parser = ConfigParser()
-    cfg_parser.read(CONFIG_FILE_PATH)
+	
+	# Read config file
+    try:
+        cfg_parser.read(CONFIG_FILE_PATH)
+    except Exception as err:
+        print("Exception:", err, file=sys.stderr)
+        sys.exit(1)
 
 	# Read RADIUS server configuration
-    radius_server_ip = cfg_parser.get(SECTION_RAD_SERVER, SERVER_IP_KEY)
-    radius_secret = cfg_parser.get(SECTION_RAD_SERVER, SECRET_KEY)
-    radius_user = cfg_parser.get(SECTION_RAD_SERVER, USER_KEY)
-    radius_passwd = cfg_parser.get(SECTION_RAD_SERVER, PASS_KEY)
+    radius_server_ip = get_config_val(cfg_parser, SECTION_RAD_SERVER, SERVER_IP_KEY)
+    radius_secret = get_config_val(cfg_parser, SECTION_RAD_SERVER, SECRET_KEY)
+    radius_user = get_config_val(cfg_parser, SECTION_RAD_SERVER, USER_KEY)
+    radius_passwd = get_config_val(cfg_parser, SECTION_RAD_SERVER, PASS_KEY)
     
+    radius_hhmea_ip = get_config_val(cfg_parser, SECTION_RAD_SERVER, HHMEA_IP_KEY)
+    radius_hhmeb_ip = get_config_val(cfg_parser, SECTION_RAD_SERVER, HHMEB_IP_KEY)
+    radius_nsapi = get_config_val(cfg_parser, SECTION_RAD_SERVER, NSAPI_KEY)
+    radius_retrans_cnt = get_config_val(cfg_parser, SECTION_RAD_SERVER, RETRANS_CNT_KEY)
+    radius_timeout = get_config_val(cfg_parser, SECTION_RAD_SERVER, TIMEOUT_KEY)
+	
 	# Save configuration in dict
     global RADIUS_SERVER
     RADIUS_SERVER = { SERVER_IP_KEY : radius_server_ip,
                       SECRET_KEY : radius_secret,
                       USER_KEY : radius_user,
-                      PASS_KEY : radius_passwd 
+                      PASS_KEY : radius_passwd,
+					  HHMEA_IP_KEY : radius_hhmea_ip,
+					  HHMEB_IP_KEY : radius_hhmeb_ip,
+					  NSAPI_KEY : radius_nsapi,
+					  RETRANS_CNT_KEY : radius_retrans_cnt,
+					  TIMEOUT_KEY : radius_timeout,
 					}
 	
 	# Read Log file configuration
-    logf = cfg_parser.get(SECTION_LOG, LOG_FILE_KEY)
-
-	# TODO: How to execute it with root privileges
-    try:
-        os.makedirs(os.path.dirname(logf), mode=777)
-        open(logf, 'a').close()
-    except OSError:
-        pass
+    logf = get_config_val(cfg_parser, SECTION_LOG, LOG_FILE_KEY)
 	
 	# Debug enable / disable
-    isDebug = cfg_parser.getboolean(SECTION_LOG, DEBUG_FLAG_KEY)
+    isDebug = get_config_val(cfg_parser, SECTION_LOG, DEBUG_FLAG_KEY, CONFIG_VAL_TYPE_BOOL)
 
     if isDebug:
         debug_level = logging.DEBUG
     else:
         debug_level = logging.INFO
 
-    logging.basicConfig(filename=logf, format='[ %(asctime)s ] [ %(module)-8s ] [ %(levelname)-8s ]  %(message)s ',
+    logging.basicConfig(filename=logf, format='[ %(asctime)s ] [ %(module)-8s ] [ %(levelname)-6s ] %(message)s ',
                         level=debug_level, datefmt='%a, %d %b %Y %H:%M:%S')
 
 
+def get_config_val(cfg_handle, section, key, val_type=CONFIG_VAL_TYPE_STR):
+    """ (obj, str, str, str) -> str or bool
+	
+	Read values from given config file.
+	
+    """
+    if val_type == CONFIG_VAL_TYPE_STR:
+        try:
+	        val = cfg_handle.get(section, key)
+        except Exception as err:
+            print("Exception: {e} config: {k}".format(e=err, k=key), file=sys.stderr)
+            sys.exit(1) 
+			
+    elif val_type == CONFIG_VAL_TYPE_BOOL:
+        try:
+            val = cfg_handle.getboolean(section, key)
+        except Exception as err:
+            print("Exception: {e} config: {k}".format(e=err, k=key), file=sys.stderr)
+            sys.exit(1) 
+			
+    if val == '':
+        print("Exception: blank value for key:", key, file=sys.stderr)
+        sys.exit(1)
+		
+    return val
+	
+						
 def find_item(obj, key):
     """ (dict, str) -> dict
     
