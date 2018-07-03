@@ -53,7 +53,6 @@ ATTRIBUTE	3GPP-Negotiated-DSCP			26	integer
 ATTRIBUTE	3GPP-Allocate-IP-Type			27	integer
 
 #
-#    Added by MIL
 # 
 ATTRIBUTE	3GPP-FW-Action-Type				30	string
 ATTRIBUTE	3GPP-FW-Address-Type     		31	string
